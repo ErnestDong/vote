@@ -100,7 +100,7 @@ class FVote:
         driver = self.driver
         driver.find_elements(By.TAG_NAME, "a")[2].click()
         sleep(sleep_magic)
-        driver.find_element(By.CLASS_NAME, "node-title").click()
+        driver.find_elements(By.CLASS_NAME, "node-title")[-1].click()
         sleep(sleep_magic * 2)
         groups = driver.find_elements(By.CLASS_NAME, "second-step-node")
         group = [i for i in groups if self.group in i.text][0]
@@ -133,16 +133,16 @@ if __name__ == "__main__":
         user = i["邮箱"]
         password = i["密码"]
         option = selenium.webdriver.ChromeOptions()
-        try:
-            ip = PROXIES.pop()
-            option.add_argument(f"--proxy-server={ip}")
-            fv = FVote(user, password, GROUP, option)
-            fv.run(ANALYSTS)
-        except IndexError:
-            logging.error("No proxy available!")
-            fv = FVote(user, password, GROUP, option)
-            fv.run(ANALYSTS)
-            break
+        # try:
+        #     ip = PROXIES.pop()
+        #     option.add_argument(f"--proxy-server={ip}")
+        #     fv = FVote(user, password, GROUP, option)
+        #     fv.run(ANALYSTS)
+        # except IndexError:
+        logging.error("No proxy available!")
+        fv = FVote(user, password, GROUP, option)
+        fv.run(ANALYSTS)
+            # break
         sleep(sleep_magic)
 
 # %%
