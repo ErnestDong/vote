@@ -10,20 +10,48 @@ from selenium.webdriver.common.proxy import Proxy, ProxyType
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from config import ANALYSTS, GROUP, PROXIES
-
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 sleep_magic = 5
+df = (
+    pd.read_excel(
+        "II投票.xlsx",
+        sheet_name="其他组",
+        index_col="行业",
+        usecols=["行业", "投票1", "投票2", "投票3", "投票4", "投票5"],
+    )
+    .dropna(how="all")
+    .to_dict(orient="index")
+)
+translate = {
+    "技术硬件": "Technology Hardware",
+    "电信": "Telecommunications",
+    "农业": "Agriculture",
+    "医药": "Healthcare, Pharmaceuticals & Biotechnology",
+    "化工": "Chemicals",
+    "石油": "Oil & Gas",
+    "公用事业与新能源": "Public Utilities & Alternative Energy",
+    "非必须消费品": "Consumer Discretionary",
+    "日用消费品": "Consumer Staples",
+    "策略": "Strategy",
+}
+vote_data = {
+    translate[i]: [i for i in df[i].values() if isinstance(i, str)] for i in df
+}
+
+#%%
 
 
 class FVote:
-    def __init__(self, user: str, password: str, groupname: str, option=None) -> None:
+    def __init__(self, user: str, password: str, option=None) -> None:
         self.user = user
         self.password = password
         if option is None:
             option = selenium.webdriver.ChromeOptions()
         self.driver = selenium.webdriver.Chrome(options=option)
-        self.group = groupname
+        # self.group = groupname
 
     def login(self):
         # NOTE: 如果不在前台开着应用会崩溃
@@ -47,7 +75,7 @@ class FVote:
         driver.find_elements(By.TAG_NAME, "button")[2].click()
         self.driver = driver
 
-    def select_group(self):
+    def select_group(self, groupname):
         sleep(sleep_magic)
         driver = self.driver
         option_first = driver.find_elements(By.TAG_NAME, "mat-list-option")
@@ -55,7 +83,7 @@ class FVote:
         option.click()
         sleep(sleep_magic)
         groups = driver.find_elements(By.TAG_NAME, "mat-list-option")
-        group = [i for i in groups if i.text == self.group][0]
+        group = [i for i in groups if i.text == groupname][0]
         group.click()
         driver.find_element(By.ID, "firm-input-field").send_keys("CICC")
         sleep(sleep_magic)
@@ -68,7 +96,7 @@ class FVote:
         buttons = driver.find_elements(By.TAG_NAME, "button")
         button = [i for i in buttons if i.text == "Save"][0]
         button.click()
-        logging.info(f"Group {self.group} selected")
+        logging.info(f"Group {groupname} selected")
         self.driver = driver
 
     def select_analyst(self, names: list[str]):
@@ -89,11 +117,13 @@ class FVote:
             )
             logging.info(f"{analyst_name} has selected with {5-num} stars")
         driver.find_element(By.ID, "save-firm-vote-btn").click()
+        sleep(sleep_magic)
+        # driver.find_elements(By.TAG_NAME, "r2-breadcrumb")[1].click()
         self.driver = driver
 
-    def screenshot(self):
+    def screenshot(self, groupname):
         path = Path("screenshots")
-        group_path = path / self.group
+        group_path = path / groupname
         if not group_path.exists():
             group_path.mkdir()
         sleep(sleep_magic)
@@ -103,7 +133,7 @@ class FVote:
         driver.find_elements(By.CLASS_NAME, "node-title")[-1].click()
         sleep(sleep_magic * 2)
         groups = driver.find_elements(By.CLASS_NAME, "second-step-node")
-        group = [i for i in groups if self.group in i.text][0]
+        group = [i for i in groups if groupname in i.text][0]
         group.click()
         sleep(sleep_magic * 2)
         firms = driver.find_elements(By.CLASS_NAME, "firm-node")
@@ -112,37 +142,35 @@ class FVote:
         driver.find_element(By.CLASS_NAME, "voting-property-node").click()
         driver.execute_script(
             f"""
-        [...document.getElementsByClassName("second-step-node")].filter(e=>!e.innerText.includes("{self.group}")).map(e=>e.parentNode.removeChild(e))
+[...document.getElementsByClassName("second-step-node")].filter(e=>!e.innerText.includes("{groupname}")).map(e=>e.parentNode.removeChild(e))
         """
         )
         driver.get_screenshot_as_file(str(group_path / (self.user + ".png")))
-        logging.info(f"take screenshot of {self.user} in {self.group}")
-        driver.quit()
+        logging.info(f"take screenshot of {self.user} in {groupname}")
 
-    def run(self, analysts: list[str]):
+    def run(self, data: dict):
         self.login()
-        self.select_group()
-        self.select_analyst(list(analysts))
-        self.screenshot()
+        for groupname, analysts in data.items():
+            if (Path("screenshots") / groupname / (self.user + ".png")).exists():
+                logging.info(f"{self.user} in {groupname} has already voted")
+                continue
+            self.select_group(groupname)
+            self.select_analyst(analysts)
+            self.screenshot(groupname)
+            self.driver.find_elements(By.TAG_NAME, "a")[1].click()
+            sleep(sleep_magic)
+        self.driver.quit()
 
 if __name__ == "__main__":
-    df = pd.read_excel("II投票.xlsx")
+    df = pd.read_excel("II投票.xlsx", sheet_name="我的")
     data = df[["邮箱", "密码"]].dropna().to_dict("records")
 
     for i in data:
         user = i["邮箱"]
         password = i["密码"]
         option = selenium.webdriver.ChromeOptions()
-        # try:
-        #     ip = PROXIES.pop()
-        #     option.add_argument(f"--proxy-server={ip}")
-        #     fv = FVote(user, password, GROUP, option)
-        #     fv.run(ANALYSTS)
-        # except IndexError:
-        logging.error("No proxy available!")
-        fv = FVote(user, password, GROUP, option)
-        fv.run(ANALYSTS)
-            # break
+        fv = FVote(user, password, option)
+        fv.run(vote_data)
         sleep(sleep_magic)
 
 # %%
