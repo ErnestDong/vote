@@ -26,16 +26,12 @@ cd xxxx # 文件资源管理器/Finder显示的下载后代码的目录地址
 pip3 install -r requirements.txt
 ```
 
-用记事本/vscode等修改 config.py：修改为 某某组、分析师(按顺序排，星多的优先)、代理(不会报错，但建议多换 IP，删掉末尾的 break 可以一直跑下去)，代理用尽/账号用尽/出bug会停下来
-
 在 powershell(Windows)/termial(macOS)中运行 main.py，注意似乎注册有检测是否在台前，但我没找出来，所以建议就让 Chrome 在台前别动。代码编写者可以保证不含有危害本地计算机的代码，祝运行者好运！
 
 ``` shell
 python3 main.py
 ```
 
-运行结束可以根据打印出来的日志信息删除掉 Excel 里面的内容，以免重复跑多次。
-
 ## 联系方式
 
-wxid-dongcy
+wxid-dongcy。出问题我选择 let it crash，Excel里剔除掉重启即可

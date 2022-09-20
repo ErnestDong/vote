@@ -1,4 +1,3 @@
-#%%
 import logging
 from pathlib import Path
 from time import sleep
@@ -6,7 +5,6 @@ from time import sleep
 import pandas as pd
 import selenium
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.proxy import Proxy, ProxyType
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -40,8 +38,6 @@ translate = {
 vote_data = {
     translate[i]: [i for i in df[i].values() if isinstance(i, str)] for i in df
 }
-
-#%%
 
 
 class FVote:
@@ -161,6 +157,7 @@ class FVote:
             sleep(sleep_magic)
         self.driver.quit()
 
+
 if __name__ == "__main__":
     df = pd.read_excel("II投票.xlsx", sheet_name="我的")
     data = df[["邮箱", "密码"]].dropna().to_dict("records")
@@ -172,5 +169,3 @@ if __name__ == "__main__":
         fv = FVote(user, password, option)
         fv.run(vote_data)
         sleep(sleep_magic)
-
-# %%
