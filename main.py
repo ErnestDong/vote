@@ -34,6 +34,10 @@ translate = {
     "非必须消费品": "Consumer Discretionary",
     "日用消费品": "Consumer Staples",
     "策略": "Strategy",
+    "宏观": "Economics",
+    "交运": "Transport, Aerospace & Logistics",
+    "工业": "Industrials",
+    "中小市值": "Small & Midcap Stocks",
 }
 vote_data = {
     translate[i]: [i for i in df[i].values() if isinstance(i, str)] for i in df
